@@ -14,7 +14,7 @@
 const int detectorChannel = 1;  // Default channel to monitor
 const int alertPin = 8;         // GPIO pin for alert output (GPIO8 on ESP32-C3)
 const int bootPin = 9; //Onboard boot button on GPIO x(GPIO9 on ESP32-C3)
-const unsigned long scanTime = 220; // Detection window in ms
+const unsigned long scanTime = 300; // Detection window in ms
 const bool invertAlertPin = false;   // Invert alert pin logic (true=LED off while deauthing; false=LED on while deauthing)
 const unsigned long stayOnChannelTime = 700; // Time to stay on a channel after detecting deauth (ms)
 const int LED_brightness = 80;   // The brightness of LED(0-255)
@@ -78,7 +78,7 @@ void setup() {
 void loop() {
   bool bootBtnPressed = (digitalRead(bootPin) == LOW);
   if (bootBtnPressed) {
-    // Blink LED for 70ms
+    // Blink LED for 50ms
     setBrightness(255 - LED_brightness);
     delay(50);
     setBrightness(255);
