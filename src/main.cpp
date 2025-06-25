@@ -31,7 +31,7 @@ bool stayOnChannel = false; // Flag to stay on current channel after detection
 void dSniffer(void* buf, wifi_promiscuous_pkt_type_t type) {
   // Detect deauthentication (0xA0) and disassociation (0xC0) frames
   wifi_promiscuous_pkt_t* pkt = (wifi_promiscuous_pkt_t*)buf;
-  if(pkt->rx_ctrl.sig_len >= 12 && (pkt->payload[0] == 0xA0 || pkt->payload[0] == 0xC0)){
+  if (pkt->rx_ctrl.sig_len >= 12 && (pkt->payload[0] == 0xA0 || pkt->payload[0] == 0xC0)) {
     deauthCount++;
   }
 }
@@ -76,57 +76,57 @@ void setup() {
 }
 
 void loop() {
-  bool bootBtnPressed = (digitalRead(bootPin)==LOW);
-  if(bootBtnPressed) {
+  bool bootBtnPressed = (digitalRead(bootPin) == LOW);
+  if (bootBtnPressed) {
     // Blink LED for 70ms
-    setBrightness(255-LED_brightness);
+    setBrightness(255 - LED_brightness);
     delay(50);
     setBrightness(255);
     
     if (!detecting) startDetector();
   }
   if (detecting) {
-    while(true) {
+    while (true) {
       curTime = millis();
     
       // Check detection window
-      if(curTime - prevTime >= scanTime) {
+      if (curTime - prevTime >= scanTime) {
         prevTime = curTime;
       
-      // Print detection count
-      Serial.println("Deauth frames: " + String(deauthCount) + " - Channel: " + String(curChannel));
+        // Print detection count
+        Serial.println("Deauth frames: " + String(deauthCount) + " - Channel: " + String(curChannel));
       
-      // Trigger alert if threshold reached
-      if(deauthCount >= 1) { // Lowered threshold for higher sensitivity
-        if(invertAlertPin) setBrightness(255);
-        else setBrightness(255-LED_brightness);
-        lastDetectionTime = curTime;
-        stayOnChannel = true; // Stay on this channel after detection
-      } else {
-        if(invertAlertPin) setBrightness(255-LED_brightness);
-        else setBrightness(255);
-      }
-      
-      // Reset counter
-      deauthCount = 0;
-      
-      // Channel hopping with conditional stay
-      if (stayOnChannel) {
-        if (curTime - lastDetectionTime < stayOnChannelTime) {
-          Serial.println("Staying on channel " + String(curChannel) + " due to recent detection");
+        // Trigger alert if threshold reached
+        if (deauthCount >= 1) { // Lowered threshold for higher sensitivity
+          if (invertAlertPin) setBrightness(255);
+          else setBrightness(255 - LED_brightness);
+          lastDetectionTime = curTime;
+          stayOnChannel = true; // Stay on this channel after detection
         } else {
-          stayOnChannel = false;
+          if (invertAlertPin) setBrightness(255 - LED_brightness);
+          else setBrightness(255);
+        }
+      
+        // Reset counter
+        deauthCount = 0;
+      
+        // Channel hopping with conditional stay
+        if (stayOnChannel) {
+          if (curTime - lastDetectionTime < stayOnChannelTime) {
+            Serial.println("Staying on channel " + String(curChannel) + " due to recent detection");
+          } else {
+            stayOnChannel = false;
+            curChannel++;
+            if (curChannel > 13) curChannel = 1; // ESP32-C3 supports channels 1-13
+            esp_wifi_set_channel(curChannel, WIFI_SECOND_CHAN_NONE);
+            Serial.println("Switching to channel " + String(curChannel));
+          }
+        } else {
           curChannel++;
-          if(curChannel > 13) curChannel = 1; // ESP32-C3 supports channels 1-13
+          if (curChannel > 13) curChannel = 1; // ESP32-C3 supports channels 1-13
           esp_wifi_set_channel(curChannel, WIFI_SECOND_CHAN_NONE);
           Serial.println("Switching to channel " + String(curChannel));
         }
-      } else {
-        curChannel++;
-        if(curChannel > 13) curChannel = 1; // ESP32-C3 supports channels 1-13
-        esp_wifi_set_channel(curChannel, WIFI_SECOND_CHAN_NONE);
-        Serial.println("Switching to channel " + String(curChannel));
-      }
       }
     }
   }
