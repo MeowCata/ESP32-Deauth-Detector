@@ -15,7 +15,8 @@ const int detectorChannel = 1;  // Default channel to monitor
 const int alertPin = 8;         // GPIO pin for alert output (GPIO8 on ESP32-C3)
 const int bootPin = 9; //Onboard boot button on GPIO x(GPIO9 on ESP32-C3)
 const unsigned long scanTime = 220; // Detection window in ms
-const bool invertAlertPin = false;   // Invert alert pin logic(true=LED off while deauthing; false=LED on while deauthing)
+const bool invertAlertPin = false;   // Invert alert pin logic (true=LED off while deauthing; false=LED on while deauthing)
+const unsigned long stayOnChannelTime = 700; // Time to stay on a channel after detecting deauth (ms)
 const int LED_brightness = 80;   // The brightness of LED(0-255)
 
 // Detection variables
@@ -24,6 +25,8 @@ unsigned long deauthCount = 0;
 unsigned long prevTime = 0;
 unsigned long curTime = 0;
 int curChannel = detectorChannel;
+unsigned long lastDetectionTime = 0; // Last time a deauth frame was detected
+bool stayOnChannel = false; // Flag to stay on current channel after detection
 
 void dSniffer(void* buf, wifi_promiscuous_pkt_type_t type) {
   // Detect deauthentication (0xA0) and disassociation (0xC0) frames
@@ -94,9 +97,11 @@ void loop() {
       Serial.println("Deauth frames: " + String(deauthCount) + " - Channel: " + String(curChannel));
       
       // Trigger alert if threshold reached
-      if(deauthCount >= 2) {
+      if(deauthCount >= 1) { // Lowered threshold for higher sensitivity
         if(invertAlertPin) setBrightness(255);
         else setBrightness(255-LED_brightness);
+        lastDetectionTime = curTime;
+        stayOnChannel = true; // Stay on this channel after detection
       } else {
         if(invertAlertPin) setBrightness(255-LED_brightness);
         else setBrightness(255);
@@ -105,10 +110,23 @@ void loop() {
       // Reset counter
       deauthCount = 0;
       
-      // Channel hopping (optional)
-      curChannel++;
-      if(curChannel > 13) curChannel = 1;  // ESP32-C3 supports channels 1-13
-      esp_wifi_set_channel(curChannel, WIFI_SECOND_CHAN_NONE);
+      // Channel hopping with conditional stay
+      if (stayOnChannel) {
+        if (curTime - lastDetectionTime < stayOnChannelTime) {
+          Serial.println("Staying on channel " + String(curChannel) + " due to recent detection");
+        } else {
+          stayOnChannel = false;
+          curChannel++;
+          if(curChannel > 13) curChannel = 1; // ESP32-C3 supports channels 1-13
+          esp_wifi_set_channel(curChannel, WIFI_SECOND_CHAN_NONE);
+          Serial.println("Switching to channel " + String(curChannel));
+        }
+      } else {
+        curChannel++;
+        if(curChannel > 13) curChannel = 1; // ESP32-C3 supports channels 1-13
+        esp_wifi_set_channel(curChannel, WIFI_SECOND_CHAN_NONE);
+        Serial.println("Switching to channel " + String(curChannel));
+      }
       }
     }
   }
