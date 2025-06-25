@@ -1,13 +1,15 @@
 # ESP32-Deauth-Detector  
 A lightweight deauth detector based on ESP32 boards  
 
-Detector logic source: [Wi-PWN](https://github.com/samdenty/Wi-PWN)  
+Original logic source: [Wi-PWN](https://github.com/samdenty/Wi-PWN)
+
+This project is modified from `Wi-PWN`'s Detector
 
 The code related to Deauth detection from the original project was extracted using `DeepSeek V3-0324` and adapted for the ESP32 (of course, you can also use it to convert this project's code for the ESP8266).  
 
 ## Main Features:  
 - [x] Detection of `de-authentication` and `de-associate` packets initiated by pressing the Boot button, as these packets are transmitted unencrypted in the air under the 802.11b/g/n protocol.  
-- [x] Scanning across channels (1-13), with a dwell time of 220ms per channel (adjustable) for detection. If a Deauth attack is detected, the LED will light up (each channel controls an LED independently. If a Deauth packet is detected on one channel but not on the next, the LED will first light up and then turn off). Therefore, when facing a single-channel Deauth attack, the LED will take some time to light up once.  
+- [x] Scanning across channels (1-13), with a dwell time of 220ms per channel (adjustable) for detection. If a Deauth attack is detected, the LED will light up (each channel controls an LED independently. If Deauth packets are detected on one channel but not on the next, the LED will **first light up and then turn off** in original logic). Considering this issue, the introduction of `Grok 3` incorporates a *StayOnChannel* logic, where it stays on the channel where a Deauth attack was recently detected for a while to check for any continued Deauth packets. If such packets are detected, it continues to stay (thus ensuring continuous detection); if not, it proceeds to scan the subsequent channels. That works very nice.
 - [x] Adjustable LED brightness via PWM control.  
 - [x] The device does not start detection immediately upon power-up. Detection begins only when the Boot button is pressed. To stop detection, press the Reset button or turn off the power.  
 * Only supports the `2.4GHz` band.  
